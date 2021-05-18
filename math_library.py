@@ -14,10 +14,13 @@ import numpy as np
 from scipy.special import roots_legendre
 from scipy.optimize import brentq
 
-#x70,w70 = np.loadtxt('weights70.txt',unpack=True)
+x100,w100 = np.loadtxt('weights100.txt',unpack=True)
 
 def calc_weigths(n):
-    '''Caclulate n Gauss-Legendre polynomial weights.'''
+    '''Caclulate n Gauss-Legendre polynomial weights. Return the
+    precalculated weights if n == 100'''
+    if (n == 100):
+        return x100,w100
     return roots_legendre(n)
 
 def integrate(a,b,n,f,*args):
@@ -39,3 +42,7 @@ def solve_root(f,xmin,xmax,*args):
     '''Solve root using Brent's method. f = function, xmin = lower bound,
     xmax = upper bound, args = arguments the function needs.'''
     return brentq(f,xmin,xmax,args)
+
+def infinity_norm(v1,v2):
+    '''Calculate infinity norm'''
+    return np.max(np.abs(v1-v2))

@@ -1,65 +1,79 @@
-from builtins import len, print
+#############################################################################
+#                                                                           #
+#   Main of Final Project problem 1 in NMSC                                 #
+#                                                                           #
+#   Project 1 is about calulating numerically the stopping powers           #
+#   of H --> Si (case1) and Si --> Au (case2). See README to see            #
+#   how the code is structured.                                             #
+#                                                                           #
+#   Mikael De Meuder 18.5.2021                                              #
+#                                                                           #
+#############################################################################
+
+
 import numpy as np
 import matplotlib.pyplot as plt
 import nuclear_stopping_formula as nsf
 import nuclear_stopping_equations as nse
 import time
 from sklearn.metrics import mean_squared_error as mse
+import math_library
 
-
-def const1(n):
+def case_values(n):
     '''Returns the constants of part 1 a) H, Si. Atomic number and mass returned
-    as tuples. n is the number of energies calculated.'''
-    return (1, 1.007825,'H'), (14, 27.976927,'Si'), np.logspace(np.log10(0.01),np.log10(5000),num=n)
-
-def const2(n):
-    '''Returns the constants of part 1 b) Si, Au. Atomic number and mass returned
-    as tuples. n is the number of energies calculated.'''
+    as tuples. n = 1 or 2 depending which case to calculate.'''
+    if (n == 1):
+        return (1, 1.007825,'H'), (14, 27.976927,'Si')
+    else:
+       return (14, 27.976927,'Si'), (79, 196.966543,'Au')
     
-    return (14, 27.976927,'Si'), (79, 196.966543,'Au'), np.logspace(np.log10(0.01),np.log10(5000),num=n)
-
-def calculate_stopping_powers(case,b_max,n_weigths):
+def calculate_stopping_powers(case,b_max,Elab,n_weigths,plot):
+    '''Calculate the stopping power numerically. case = 1 or 2, 1 = H --> Si
+    2 = Si --> Au. See function case_values().'''
     n = 200
-    r = np.linspace(0.01,2*b_max,n)
     
     SP = np.zeros(n)
     USP = np.zeros(n)
-    theta = np.zeros(n)
 
-    projectile, atom, Elab = const2(n)
+    projectile, atom = case_values(case)
     Z1,M1,X1 = atom
     Z2,M2,X2 = projectile
 
+    # Calculate the Stopping power and the universal stopping power
+    # and measure the computation time
+
     t = time.time()
     for i in range(n):
-        SP[i] = nse.Sn(Z1,M1,Z2,M2,b_max,Elab[i],n_weigths)* 1e-13
+        SP[i] = nse.Sn(Z1,M1,Z2,M2,b_max,Elab[i],n_weigths)* 1e-13 #convert keV * Å^2 to ev * cm^2
         USP[i] = nsf.Sn(Z1,M1,Z2,M2,Elab[i])
-        #USP[i] = nsf.fit(Elab[i],Z1,Z2,M1,M2)
     computing_time = time.time()-t
-
     print('Computation time: {:.2f} s'.format(computing_time))
 
 
-    # ------------- Plotting ------------- #
-    #plt.plot(Elab,SP,label='Numerical Stopping Power')
-    #plt.plot(Elab,USP,'--',label='Universal Formula')
-    #plt.yscale('log')
-    #plt.xscale('log')
-    #plt.xlabel(r'$E_{lab} / [keV]$')
-    #plt.ylabel(r'$S_n (E_{lab}) / [eV cm^2]$')
-    #plt.legend(loc='best')
-    #title = r'$^{}{} \rightarrow ^{{}}{}$'.format({Z2},X2,{Z1},X1)
-    #plt.title(title)
-    #plt.show()
+    # ------------- Plot if true ------------- #
+    if (plot):
+        plt.plot(Elab,SP,label='Numerical Stopping Power')
+        plt.plot(Elab,USP,'--',label='Universal Formula')
+        plt.yscale('log')
+        plt.xscale('log')
+        plt.xlabel(r'$E_{lab}$ / [keV]')
+        plt.ylabel(r'$S_n (E_{lab})$ / [eV cm^2]')
+        plt.legend(loc='best')
+        title = r'$^{}{} \rightarrow ^{}{}$'.format({Z2},X2,{Z1},X1)
+        plt.title(title)
+        plt.show()
 
-    # Mean squared "error" between numerically calculated stopping power
+    # Infinity norm between numerically calculated stopping power
     # and by universal stopping power formula
-    difference = mse(SP,USP)
+    difference = math_library.infinity_norm(SP,USP)
 
-    return difference,computing_time
+    return SP,USP,difference,computing_time
 
-def potential_curves():
-    r = np.linspace(0.0001,10,1000)
+def potential_curves(r):
+    '''Calculate screened Coulomb potential curve from 0 to r
+    between H - Si and Si - Au.'''
+
+    r = np.linspace(0.0001,r,1000)
     pot = np.zeros((2,len(r)))
     case = [[1,14],[14,79]]
 
@@ -67,7 +81,7 @@ def potential_curves():
         for j in (0,1):
             pot[j][i] = nse.screened_Coulomb(case[j][1],case[j][0],r[i])
 
-
+    # ------------- Plot ------------- #
     plt.plot(r,pot[0],label=r'$^1 \mathrm{H} \rightarrow ^{28} \mathrm{Si}$')
     plt.plot(r,pot[1],label=r'$^{28} \mathrm{Si} \rightarrow ^{197} \mathrm{Au}$')
     plt.yscale('log')
@@ -78,34 +92,37 @@ def potential_curves():
     plt.legend(loc='best')
     plt.show()
 
-def computation_accuracy_and_time():
-    n = 15
-    b_max = 4 # Å
-
-    weights = np.arange(10,101,n)
-    print(weights)
+def computation_accuracy_and_time(Elab,b_max):
+    '''Comparing the computation accuracy and time.'''
+    n = 15  
+    weights = np.arange(10,101,n) # Weight nodes
+    print("Number of weights: {}".format(weights))
     dif1 = np.zeros(len(weights))
     dif2 = np.zeros(len(weights))
 
     comp_t1 = np.zeros(len(weights))
     comp_t2 = np.zeros(len(weights))
 
+
+    # Computing the stopping powers. Case 2 commented out 
+    # because it didn't differ significantly from case 1
+
     for i in range(len(weights)):
-        dif1[i],comp_t1[i] = calculate_stopping_powers(const1,b_max,weights[i])
-        dif2[i],comp_t2[i] = calculate_stopping_powers(const2,b_max,weights[i])
+        _,_,dif1[i],comp_t1[i] = calculate_stopping_powers(case_values(1),b_max,Elab,weights[i],False)
+        #_,_,dif2[i],comp_t2[i] = calculate_stopping_powers(case_values(2),b_max,Elab,weights[i],False)
 
-
+    # ------------- Plot ------------- #
     fig, ax1 = plt.subplots()
 
     ax1.plot(weights,dif1,c='#1f77b4',marker='o',linestyle='None')
-    ax1.plot(weights,dif2,c='#1f77b4',marker='x',linestyle='None')
-    ax1.set_xlabel('Weights')
-    ax1.set_ylabel('MSE')
+    #ax1.plot(weights,dif2,c='#1f77b4',marker='x',linestyle='None')
+    ax1.set_xlabel('Number of weights')
+    ax1.set_ylabel(r'$L_{\infty}$')
     ax1.tick_params('y',colors='#1f77b4')
 
     ax2 = ax1.twinx()
     ax2.plot(weights,comp_t1,c='#ff7f0e',marker='o',linestyle='None')
-    ax2.plot(weights,comp_t2,c='#ff7f0e',marker='x',linestyle='None')
+    #ax2.plot(weights,comp_t2,c='#ff7f0e',marker='x',linestyle='None')
     ax2.set_ylabel('Computation time / [s]')
     ax2.tick_params('y',colors='#ff7f0e')
     fig.tight_layout()
@@ -113,13 +130,26 @@ def computation_accuracy_and_time():
     plt.show()
 
 def main():
-    #potential_curves()
+    # Calculate the potential curve to deternime reasonable b_max
+    r = 10 # Å
+    potential_curves(r)
 
-    n = 8
-    b_max = 4 # Å
+    # Determine the "Sweet spot" of accuracy and computation time
+    # for number of nodes in Gauss-Legendre quadrature. I settled with 100
+    # because the computation is only necessary to do once
+     
+    #computation_accuracy_and_time(Elab,b_max)
 
-    computation_accuracy_and_time()
+
+    # The actual computation
+    n = 100
+    b_max = 6 # Å
+    Elab = np.logspace(np.log10(0.01),np.log10(5000),num=200)
+    SP1,USP1,_,_ = calculate_stopping_powers(1,b_max,Elab,n,True)
+    SP2,USP2,_,_ = calculate_stopping_powers(2,b_max,Elab,n,True)
 
 
 if __name__ == "__main__":
     main()
+
+# Around Elab = 1100 keV is when epsilon > 30

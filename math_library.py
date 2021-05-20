@@ -14,7 +14,7 @@ import numpy as np
 from scipy.special import roots_legendre
 from scipy.optimize import brentq
 
-x100,w100 = np.loadtxt('weights100.txt',unpack=True)
+x100,w100 = np.loadtxt('../run/weights100.txt',unpack=True)
 
 def calc_weigths(n):
     '''Caclulate n Gauss-Legendre polynomial weights. Return the

@@ -10,22 +10,21 @@
 #                                                                           #
 #############################################################################
 
-
 import numpy as np
 import matplotlib.pyplot as plt
+import time
+
 import nuclear_stopping_formula as nsf
 import nuclear_stopping_equations as nse
-import time
-from sklearn.metrics import mean_squared_error as mse
 import math_library
 
 def case_values(n):
     '''Returns the constants of part 1 a) H, Si. Atomic number and mass returned
     as tuples. n = 1 or 2 depending which case to calculate.'''
     if (n == 1):
-        return (1, 1.007825,'H'), (14, 27.976927,'Si')
+        return (1, 1.007825,'^1H'), (14, 27.976927,'^{28}Si')
     else:
-       return (14, 27.976927,'Si'), (79, 196.966543,'Au')
+       return (14, 27.976927,'^{28}Si'), (79, 196.966543,'^{197}Au')
     
 def calculate_stopping_powers(case,b_max,Elab,n_weigths,plot):
     '''Calculate the stopping power numerically. case = 1 or 2, 1 = H --> Si
@@ -51,16 +50,17 @@ def calculate_stopping_powers(case,b_max,Elab,n_weigths,plot):
 
 
     # ------------- Plot if true ------------- #
+    fontsize = 13
     if (plot):
         plt.plot(Elab,SP,label='Numerical Stopping Power')
         plt.plot(Elab,USP,'--',label='Universal Formula')
         plt.yscale('log')
         plt.xscale('log')
-        plt.xlabel(r'$E_{lab}$ / [keV]')
-        plt.ylabel(r'$S_n (E_{lab})$ / [eV cm^2]')
+        plt.xlabel(r'$E_{lab}$ / [keV]',fontsize=fontsize)
+        plt.ylabel(r'$S_n (E_{lab})$ / [eV cm$^2$]',fontsize=fontsize)
         plt.legend(loc='best')
-        title = r'$^{}{} \rightarrow ^{}{}$'.format({Z2},X2,{Z1},X1)
-        plt.title(title)
+        title = r'${} \rightarrow {}$'.format(X2,X1)
+        plt.title(title,fontsize=fontsize)
         plt.show()
 
     # Infinity norm between numerically calculated stopping power
@@ -82,12 +82,13 @@ def potential_curves(r):
             pot[j][i] = nse.screened_Coulomb(case[j][1],case[j][0],r[i])
 
     # ------------- Plot ------------- #
+    fontsize = 13
     plt.plot(r,pot[0],label=r'$^1 \mathrm{H} \rightarrow ^{28} \mathrm{Si}$')
     plt.plot(r,pot[1],label=r'$^{28} \mathrm{Si} \rightarrow ^{197} \mathrm{Au}$')
     plt.yscale('log')
-    plt.ylabel('V(r) / [keV]')
-    plt.xlabel('r / [$\AA$]')
-    plt.title('Screened Coulomb Potential')
+    plt.ylabel('V(r) / [keV]',fontsize=fontsize)
+    plt.xlabel('r / [$\AA$]',fontsize=fontsize)
+    plt.title('Screened Coulomb Potential',fontsize=fontsize)
     plt.grid('True')
     plt.legend(loc='best')
     plt.show()
@@ -138,11 +139,10 @@ def main():
     # for number of nodes in Gauss-Legendre quadrature. I settled with 100
     # because the computation is only necessary to do once
      
-    #computation_accuracy_and_time(Elab,b_max)
-
+    #computation_accuracy_and_time(Elab,6) # 6 = b_max
 
     # The actual computation
-    n = 100
+    n = 30
     b_max = 6 # Å
     Elab = np.logspace(np.log10(0.01),np.log10(5000),num=200)
     SP1,USP1,_,_ = calculate_stopping_powers(1,b_max,Elab,n,True)

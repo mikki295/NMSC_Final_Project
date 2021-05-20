@@ -29,7 +29,6 @@
 import numpy as np
 import math_library
 
-
 def g_squared(r,b,Ecom,Z1,Z2):
     '''g(r)^2 See equation (3) in project description'''
     Vr = screened_Coulomb(Z1,Z2,r)
@@ -104,6 +103,3 @@ def F(u,b,rmin,Ecom,Z1,Z2):
     right = ((rmin**2) / (u**2 * Ecom))
 
     return (left + right*(Vrmin - Vumin))**(-1/2.)
-    
-
-
